@@ -9,7 +9,7 @@ class HParams:
 
     # Architecture
     N_X: int = 16 ** 2  # input (LGN) neurons
-    N_E: int = 20 ** 2  # excitatory output neurons
+    N_E: int = 55 * 55 * 96  # excitatory output neurons (AlexNet layer-1 scale)
     N_I_frac: float = 0.25  # fraction of N_E → inhibitory count
 
     # Training schedule
