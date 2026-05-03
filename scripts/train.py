@@ -21,8 +21,8 @@ from pathlib import Path
 import torch
 from scipy.io import loadmat
 
-from Network2D import Network, N_E_ALEXNET, N_I_ALEXNET
-from HParams import HParams
+from src.Network2D import Network, N_E_ALEXNET, N_I_ALEXNET
+from src.HParams import HParams
 
 
 def load_images(path: str | Path, device: torch.device) -> torch.Tensor:
