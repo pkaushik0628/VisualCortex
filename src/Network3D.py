@@ -41,8 +41,8 @@ from pathlib import Path
 from typing import Optional
 
 import torch
-from NeuronGroup import NeuronGroup
-from HParams import HParams
+from src.NeuronGroup import NeuronGroup
+from src.HParams import HParams
 
 
 # ---------------------------------------------------------------------------
