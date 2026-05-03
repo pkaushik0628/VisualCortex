@@ -21,7 +21,7 @@ from pathlib import Path
 import torch
 from scipy.io import loadmat
 
-from src.Network2D import Network, N_E_ALEXNET, N_I_ALEXNET
+from src.Network3D import Network, N_E_ALEXNET, N_I_ALEXNET
 from src.HParams import HParams
 
 
