@@ -15,7 +15,7 @@
 #SBATCH --time=0-22:59:00
 
 # Set the working directory to root of repository
-cd /data/gpfs/projects/punim2907/paddy/code2/NeuroPINNs
+cd /data/gpfs/projects/punim2907/paddy/code3/VisualCortex
 export PYTHONPATH=$PWD
 
 # Define variables
