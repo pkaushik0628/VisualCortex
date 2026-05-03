@@ -156,16 +156,14 @@ def train(
 def main() -> None:
     parser = argparse.ArgumentParser(description="V1 spiking trainer (AlexNet scale)")
     parser.add_argument("--device",     default="auto")
-    parser.add_argument("--images",     default="VanHateren_DoG_small.mat")
+    parser.add_argument("--images",     default="/data/gpfs/projects/punim2907/paddy/code3/data/VanHateren_DoG_small.mat")
     parser.add_argument("--N_n",        type=int, default=4000)
     parser.add_argument("--N_q",        type=int, default=100)
     parser.add_argument("--N_b",        type=int, default=100)
-    parser.add_argument("--N_E",        type=int, default=None,
-                        help=f"Override N_E (default HParams; "
-                             f"AlexNet={N_E_ALEXNET:,})")
+    parser.add_argument("--N_E",        type=int, default=290400)
     parser.add_argument("--N_X",        type=int, default=None,
                         help="Override N_X patch size")
-    parser.add_argument("--checkpoint_every", type=int, default=100,
+    parser.add_argument("--checkpoint_every", type=int, default=1000,
                         help="Save checkpoint every N learning iters")
     parser.add_argument("--resume",     default=None,
                         help=".pt checkpoint to resume from")
