@@ -11,7 +11,7 @@ Usage
     python train.py --N_E 290400 --N_X 256 --N_n 4000
 
     # Resume from checkpoint
-    python train.py --checkpoint v1_retinotopic.pt
+    python train.py --checkpoint v1_weights2D.pt
 """
 from __future__ import annotations
 import argparse
@@ -21,8 +21,8 @@ from pathlib import Path
 import torch
 from scipy.io import loadmat
 
-from src.Network3D import Network, N_E_ALEXNET, N_I_ALEXNET
-from src.HParams import HParams
+from Network2D import Network, N_E_ALEXNET, N_I_ALEXNET
+from HParams import HParams
 
 
 def load_images(path: str | Path, device: torch.device) -> torch.Tensor:
@@ -149,36 +149,17 @@ def train(
             print(f"{i_T} ", end="" if i_T % 10 else "\n", flush=True)
 
     print(f"\nPhase 2 complete ({time.time()-t1:.1f}s)")
-    net.save("v1_retinotopic.pt")
+    net.save("v1_weights2D.pt")
     return net
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="V1 spiking trainer (AlexNet scale)")
-    parser.add_argument("--device",     default="auto")
-    parser.add_argument("--images",     default="/data/gpfs/projects/punim2907/paddy/code3/data/VanHateren_DoG_small.mat")
-    parser.add_argument("--N_n",        type=int, default=4000)
-    parser.add_argument("--N_q",        type=int, default=100)
-    parser.add_argument("--N_b",        type=int, default=100)
-    parser.add_argument("--N_E",        type=int, default=290400)
-    parser.add_argument("--N_X",        type=int, default=None,
-                        help="Override N_X patch size")
-    parser.add_argument("--checkpoint_every", type=int, default=1000,
-                        help="Save checkpoint every N learning iters")
-    parser.add_argument("--resume",     default=None,
-                        help=".pt checkpoint to resume from")
-    args = parser.parse_args()
-
-    # Device
-    if args.device == "auto":
-        if torch.cuda.is_available():
-            device = torch.device("cuda")
-        elif torch.backends.mps.is_available():
-            device = torch.device("mps")
-        else:
-            device = torch.device("cpu")
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
     else:
-        device = torch.device(args.device)
+        device = torch.device("cpu")
 
     print(f"Device: {device}")
     if device.type == "cuda":
@@ -187,18 +168,15 @@ def main() -> None:
     elif device.type == "mps":
         print("  Apple Silicon MPS backend")
 
-    # HParams
-    hp = HParams(N_n=args.N_n, N_q=args.N_q, N_b=args.N_b)
-    if args.N_E is not None:
-        hp.N_E = args.N_E
-        hp.N_I = int(hp.N_E * hp.N_I_frac)
-    if args.N_X is not None:
-        hp.N_X = args.N_X
+    hp = HParams()   # N_E=290400, N_I=72600, N_X=256 — all AlexNet defaults
 
-    train(hp, device,
-          image_path=args.images,
-          checkpoint_every=args.checkpoint_every,
-          resume_from=args.resume)
+    train(
+        hp,
+        device,
+        image_path="/data/gpfs/projects/punim2907/paddy/code3/data/VanHateren_DoG_small.mat",
+        checkpoint_every=1000,
+        resume_from=None,
+    )
 
 
 if __name__ == "__main__":
