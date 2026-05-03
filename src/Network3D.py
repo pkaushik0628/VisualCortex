@@ -244,7 +244,7 @@ class Network:
         self.W_II_v, _, _ = _init_sparse_w(ii_r, ii_c, (hp.N_I, hp.N_I), hp.L1_II, device)
 
         # Build CSR tensors (used for matmul)
-        self._rebuild_sparse()
+        self._build_sparse_once()
         print("Weights initialised.")
 
         # Save initial values for comparison
@@ -305,25 +305,36 @@ class Network:
         W.mul_(tmp.clamp(max=L1) / tmp)
         return W
 
-    def _rebuild_sparse(self) -> None:
+    def _build_sparse_once(self) -> None:
         """
-        Rebuild CSR tensors from current value vectors and stored indices.
-        Called after init and after each weight update.
-        MPS note: torch.sparse_csr_tensor is CPU-only; we use COO and
-        convert to CSR only on CUDA. On MPS/CPU we use COO directly since
-        torch.sparse.mm supports COO on CPU.
+        Build COO tensors once at init, storing the index tensor permanently.
+        Subsequent updates only swap the values tensor — no re-stacking indices.
         """
-        hp = self.hp
+        hp  = self.hp
         dev = self.dev
 
-        def _coo(r, c, v, shape):
-            idx = torch.stack([r, c])
-            return torch.sparse_coo_tensor(idx, v, shape, device=dev).coalesce()
+        # Build and store index tensors once — these never change
+        self._ee_idx = torch.stack([self._ee_r, self._ee_c])  # (2, nnz_EE)
+        self._ei_idx = torch.stack([self._ei_r, self._ei_c])
+        self._ie_idx = torch.stack([self._ie_r, self._ie_c])
+        self._ii_idx = torch.stack([self._ii_r, self._ii_c])
 
-        self.W_EE = _coo(self._ee_r, self._ee_c, self.W_EE_v, (hp.N_E, hp.N_E))
-        self.W_EI = _coo(self._ei_r, self._ei_c, self.W_EI_v, (hp.N_E, hp.N_I))
-        self.W_IE = _coo(self._ie_r, self._ie_c, self.W_IE_v, (hp.N_I, hp.N_E))
-        self.W_II = _coo(self._ii_r, self._ii_c, self.W_II_v, (hp.N_I, hp.N_I))
+        self.W_EE = torch.sparse_coo_tensor(self._ee_idx, self.W_EE_v, (hp.N_E, hp.N_E), device=dev).coalesce()
+        self.W_EI = torch.sparse_coo_tensor(self._ei_idx, self.W_EI_v, (hp.N_E, hp.N_I), device=dev).coalesce()
+        self.W_IE = torch.sparse_coo_tensor(self._ie_idx, self.W_IE_v, (hp.N_I, hp.N_E), device=dev).coalesce()
+        self.W_II = torch.sparse_coo_tensor(self._ii_idx, self.W_II_v, (hp.N_I, hp.N_I), device=dev).coalesce()
+
+    def _update_sparse_values(self) -> None:
+        """
+        After a weight update, swap in new value tensors without re-stacking indices.
+        This avoids the 13 GB index allocation that caused CUDA OOM on rebuild.
+        """
+        hp  = self.hp
+        dev = self.dev
+        self.W_EE = torch.sparse_coo_tensor(self._ee_idx, self.W_EE_v, (hp.N_E, hp.N_E), device=dev).coalesce()
+        self.W_EI = torch.sparse_coo_tensor(self._ei_idx, self.W_EI_v, (hp.N_E, hp.N_I), device=dev).coalesce()
+        self.W_IE = torch.sparse_coo_tensor(self._ie_idx, self.W_IE_v, (hp.N_I, hp.N_E), device=dev).coalesce()
+        self.W_II = torch.sparse_coo_tensor(self._ii_idx, self.W_II_v, (hp.N_I, hp.N_I), device=dev).coalesce()
 
     # ──────────────────────────────────────────────────────────────────────
     # Forward step
@@ -491,8 +502,8 @@ class Network:
         self.W_II_v = _upd_sparse(self.W_II_v, dW["II"], self.eta["II"],
                                    hp.L1_II, self._ii_r, hp.N_I, self._ii_diag)
 
-        # Rebuild COO tensors for next forward pass
-        self._rebuild_sparse()
+        # Swap in new values without re-allocating index tensors
+        self._update_sparse_values()
 
     def apply_threshold_updates(self) -> None:
         hp = self.hp
@@ -537,5 +548,5 @@ class Network:
         self._ii_diag = (self._ii_r == self._ii_c)
         self.E.theta.copy_(ckpt["theta_E"])
         self.I.theta.copy_(ckpt["theta_I"])
-        self._rebuild_sparse()
+        self._build_sparse_once()
         print(f"Weights loaded from {path}")
