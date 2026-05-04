@@ -8,12 +8,12 @@ class HParams:
     """All simulation hyperparameters in one place."""
 
     # Architecture
-    N_X: int = 16 ** 2  # input (LGN) neurons
-    N_E: int = 50000  # excitatory output neurons (AlexNet layer-1 scale)
+    N_X: int = 64 ** 2  # input (LGN) neurons
+    N_E: int = 10000  # excitatory output neurons (AlexNet layer-1 scale)
     N_I_frac: float = 0.25  # fraction of N_E → inhibitory count
 
     # Training schedule
-    N_n: int = 4000  # total batches (including threshold warm-up)
+    N_n: int = 1200  # total batches (including threshold warm-up)
     N_q: int = 100  # threshold warm-up batches (weights frozen)
     N_b: int = 100  # batch size (images per batch)
     N_t: int = 400  # timesteps per image (ms)
