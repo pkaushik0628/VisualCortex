@@ -13,7 +13,7 @@ class HParams:
     N_I_frac: float = 0.25  # fraction of N_E → inhibitory count
 
     # Training schedule
-    N_n: int = 1200  # total batches (including threshold warm-up)
+    N_n: int = 10000  # total batches (including threshold warm-up)
     N_q: int = 100  # threshold warm-up batches (weights frozen)
     N_b: int = 100  # batch size (images per batch)
     N_t: int = 400  # timesteps per image (ms)
