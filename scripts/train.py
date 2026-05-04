@@ -143,13 +143,13 @@ def train(
 
             # Periodic checkpoint
             if i_T % checkpoint_every == 0:
-                ckpt_path = f"ckpt_iter{i_T:05d}.pt"
+                ckpt_path = f"ckpt_iter{i_T:05d}_vot.pt"
                 net.save(ckpt_path)
         else:
             print(f"{i_T} ", end="" if i_T % 10 else "\n", flush=True)
 
     print(f"\nPhase 2 complete ({time.time()-t1:.1f}s)")
-    net.save("v1_weights2D.pt")
+    net.save("v1_weights_vot.pt")
     return net
 
 
