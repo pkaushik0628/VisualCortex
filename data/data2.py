@@ -1,24 +1,17 @@
 """
 data.py
 =======
-LGN preprocessing pipeline for Network2D training.
+LGN preprocessing pipeline matching Van Hateren + Zylberberg-style model.
 
-This implementation follows the preprocessing described in:
+Pipeline:
+1. Load natural image (0–1)
+2. Global normalization (single dataset-consistent scale only)
+3. Divisively normalised DoG filtering (FULL image)
+4. Random 16×16 patch extraction (AFTER filtering)
+5. ON/OFF rectification
+6. Scaling to firing-rate regime (~20 Hz mean)
 
-- Van Hateren natural image pipeline
-- Divisively normalised Difference-of-Gaussians (DoG)
-- ON/OFF LGN rectification
-- Patch-based sampling (16×16)
-- Rate-coded neural inputs (no spike generation)
-
-Output format
--------------
-R_X : FloatTensor (2*N_X, N_b)
-    ON  channel: max(F, 0)
-    OFF channel: max(-F, 0)
-
-Values are scaled to approximate LGN firing rates (~20 Hz mean,
-bounded implicitly by downstream models if needed).
+No spike generation included.
 """
 
 from __future__ import annotations
@@ -29,7 +22,7 @@ from PIL import Image
 
 
 # ─────────────────────────────────────────────────────────────
-# Divisively normalised DoG (LGN model)
+# LGN FILTER (Divisive DoG)
 # ─────────────────────────────────────────────────────────────
 
 def dog_filter(
@@ -43,21 +36,17 @@ def dog_filter(
     Divisively normalised Difference-of-Gaussians:
 
         F(x,y) = (F_c - F_s) / (F_d + eps)
-
-    Parameters
-    ----------
-    img : (H, W) float32, zero-mean unit-std image
     """
 
     F_c = gaussian_filter(img, sigma=sigma_c)
     F_s = gaussian_filter(img, sigma=sigma_s)
     F_d = gaussian_filter(img, sigma=sigma_d)
 
-    return ((F_c - F_s) / (F_d + eps)).astype(np.float32)
+    return (F_c - F_s) / (F_d + eps)
 
 
 # ─────────────────────────────────────────────────────────────
-# Image preprocessing → LGN response
+# IMAGE → LGN PATCH
 # ─────────────────────────────────────────────────────────────
 
 def preprocess_image(
@@ -70,45 +59,47 @@ def preprocess_image(
         sigma_d: float = 1.5,
 ) -> np.ndarray:
     """
-    Convert image → LGN ON/OFF vector.
-
-    Steps
-    -----
-    1. Grayscale + resize
-    2. Zero-mean, unit-std normalization
-    3. Divisively normalized DoG filter
-    4. Extract random 16×16 patch
-    5. Scale responses
-    6. ON/OFF rectification
+    Full paper-consistent LGN preprocessing.
 
     Returns
     -------
-    (2 * patch_size^2,) float32 vector
+    (2 * patch_size^2,) ON/OFF vector
     """
 
-    # grayscale + resize
+    # ─────────────────────────────────────────────
+    # 1. Load + grayscale + resize
+    # ─────────────────────────────────────────────
     img = pil_img.convert("L").resize((size, size), Image.BILINEAR)
     arr = np.array(img, dtype=np.float32)
 
-    # normalize (Van Hateren assumption)
-    std = arr.std()
-    if std > 1e-8:
-        arr = (arr - arr.mean()) / std
+    # ─────────────────────────────────────────────
+    # 2. Global normalization (ONLY ONCE)
+    #    (paper: std = 1 across dataset scale)
+    # ─────────────────────────────────────────────
+    arr = arr / (arr.std() + 1e-8)
 
-    # LGN filter
-    filt = dog_filter(arr, sigma_c, sigma_s, sigma_d)
+    # ─────────────────────────────────────────────
+    # 3. LGN filtering (FULL IMAGE)
+    # ─────────────────────────────────────────────
+    filt = dog_filter(arr, sigma_c, sigma_s, sigma_d).astype(np.float32)
 
-    # sample random patch (16×16 default)
+    # ─────────────────────────────────────────────
+    # 4. Random patch extraction (AFTER filtering)
+    # ─────────────────────────────────────────────
     H = size - patch_size
     x = np.random.randint(0, H + 1)
     y = np.random.randint(0, H + 1)
 
     patch = filt[x:x + patch_size, y:y + patch_size].reshape(-1)
 
-    # scale to firing-rate regime (~20 Hz target mean)
+    # ─────────────────────────────────────────────
+    # 5. Scaling to firing-rate regime
+    # ─────────────────────────────────────────────
     r_x = patch * scale
 
-    # ON / OFF split (LGN populations)
+    # ─────────────────────────────────────────────
+    # 6. ON / OFF rectification
+    # ─────────────────────────────────────────────
     pos = r_x > 0
     on  = r_x * pos.astype(np.float32)
     off = -r_x * (~pos).astype(np.float32)
@@ -117,14 +108,12 @@ def preprocess_image(
 
 
 # ─────────────────────────────────────────────────────────────
-# Dataset loader (ImageNet / TinyImageNet stream)
+# DATASET STREAMER
 # ─────────────────────────────────────────────────────────────
 
 class ImageNetStreamer:
     """
-    Streams images from HuggingFace TinyImageNet.
-
-    Produces LGN-processed ON/OFF patches.
+    Streams TinyImageNet images and produces LGN-coded inputs.
     """
 
     def __init__(
@@ -141,7 +130,7 @@ class ImageNetStreamer:
         self.patch_size = patch_size
         self.N_X = patch_size * patch_size
 
-        print(f"Loading {n_images} images (TinyImageNet, split={split})...")
+        print(f"Loading {n_images} images (LGN pipeline)...")
 
         try:
             from datasets import load_dataset
@@ -185,9 +174,9 @@ class ImageNetStreamer:
         self.n_images = loaded
         self._cache = self._cache[:loaded]
 
-        print(f"Done. Dataset shape: {self._cache.shape}")
+        print(f"Done. Shape: {self._cache.shape}")
 
-    # ─────────────────────────────────────────────────────────
+    # ─────────────────────────────────────────────
 
     def sample_batch(
             self,
@@ -195,11 +184,11 @@ class ImageNetStreamer:
             device: torch.device,
     ) -> torch.Tensor:
         """
-        Returns LGN batch:
-            (2*N_X, N_b)
+        Returns:
+            R_X: (2*N_X, N_b)
         """
 
         idx = np.random.randint(0, self.n_images, size=N_b)
-        batch = self._cache[idx].T  # (2*N_X, N_b)
+        batch = self._cache[idx].T
 
         return torch.from_numpy(batch).to(device)
