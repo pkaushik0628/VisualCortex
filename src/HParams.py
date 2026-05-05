@@ -8,7 +8,7 @@ class HParams:
     """All simulation hyperparameters in one place."""
 
     # Architecture
-    N_X: int = 64 ** 2  # input (LGN) neurons
+    N_X: int = 16 ** 2  # input (LGN) neurons
     N_E: int = 10000  # excitatory output neurons (AlexNet layer-1 scale)
     N_I_frac: float = 0.25  # fraction of N_E → inhibitory count
 
