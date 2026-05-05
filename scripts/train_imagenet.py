@@ -13,8 +13,8 @@ from pathlib import Path
 
 import torch
 
-from src.Network3D import Network, N_E_ALEXNET, N_I_ALEXNET
-from src.HParams import HParams
+from Network3D import Network, N_E_ALEXNET, N_I_ALEXNET
+from HParams import HParams
 from data.data2 import ImageNetStreamer
 
 
@@ -38,6 +38,7 @@ def train(
     # ── Data ──────────────────────────────────────────────────────────────
     streamer = ImageNetStreamer(
         n_images  = N_IMAGENET,
+        #img_size  = IMAGE_SIZE,
         cache_dir = HF_CACHE_DIR,
     )
 
@@ -98,12 +99,12 @@ def train(
                   f"elapsed={elapsed:.0f}s  ETA={eta_s/60:.1f}min", flush=True)
 
             if i_T % CHECKPOINT_EVERY == 0:
-                net.save(f"ckpt_iter{i_T:05d}_imagenet3.pt")
+                net.save(f"ckpt_iter{i_T:05d}.pt")
         else:
             print(f"{i_T} ", end="" if i_T % 10 else "\n", flush=True)
 
     print(f"\nPhase 2 complete ({time.time()-t1:.1f}s)")
-    net.save("v1_weights_imagenet3.pt")
+    net.save("v1_weights2D.pt")
     return net
 
 
