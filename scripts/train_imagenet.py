@@ -15,7 +15,7 @@ import torch
 
 from src.Network3D import Network, N_E_ALEXNET, N_I_ALEXNET
 from src.HParams import HParams
-from data.data import ImageNetStreamer
+from data.data2 import ImageNetStreamer
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
