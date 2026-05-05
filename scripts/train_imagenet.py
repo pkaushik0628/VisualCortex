@@ -19,7 +19,7 @@ from data.data2 import ImageNetStreamer
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
-IMAGE_SIZE        = 64                    # resize ImageNet to 64×64 grayscale
+IMAGE_SIZE        = 16                    # resize ImageNet to 64×64 grayscale
 N_IMAGENET        = 10_000               # images to cache from HuggingFace
 CHECKPOINT_EVERY  = 1000                 # save .pt every N learning iters
 RESUME_FROM       = None                 # set to "ckpt_iter01000.pt" to resume
