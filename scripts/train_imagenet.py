@@ -99,12 +99,12 @@ def train(
                   f"elapsed={elapsed:.0f}s  ETA={eta_s/60:.1f}min", flush=True)
 
             if i_T % CHECKPOINT_EVERY == 0:
-                net.save(f"ckpt_iter{i_T:05d}_imagenet.pt")
+                net.save(f"ckpt_iter{i_T:05d}_imagenet2.pt")
         else:
             print(f"{i_T} ", end="" if i_T % 10 else "\n", flush=True)
 
     print(f"\nPhase 2 complete ({time.time()-t1:.1f}s)")
-    net.save("v1_weights_imagenet.pt")
+    net.save("v1_weights_imagenet2.pt")
     return net
 
 
