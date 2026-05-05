@@ -83,7 +83,7 @@ class ImageNetStreamer:
     cache_dir : local HF cache directory (optional)
     """
 
-    PATCH_SIZE = 16      # patch edge length in pixels
+    PATCH_SIZE = 64      # patch edge length in pixels
     BUFF       = 20      # boundary buffer (same as Van Hateren)
     SCALE      = 70.0    # firing rate scale factor
     MIN_SIZE   = PATCH_SIZE + 2 * BUFF + 1   # minimum image dimension
