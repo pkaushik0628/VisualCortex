@@ -11,7 +11,7 @@ class ImageNetStreamer:
             img_size: int = 64,
             patch_size: int = 16,
             split: str = "train",
-            cache_dir: str | None = None,
+            cache_dir: Optional[str] = None,
     ):
 
         self.n_images = n_images
