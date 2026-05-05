@@ -38,7 +38,6 @@ def train(
     # ── Data ──────────────────────────────────────────────────────────────
     streamer = ImageNetStreamer(
         n_images  = N_IMAGENET,
-        img_size  = IMAGE_SIZE,
         cache_dir = HF_CACHE_DIR,
     )
 
