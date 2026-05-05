@@ -19,7 +19,7 @@ cd /data/gpfs/projects/punim2907/paddy/code3/VisualCortex
 export PYTHONPATH=$PWD
 
 # Define variables
-script="scripts/train.py"
+script="scripts/train_imagenet.py"
 data_dir="/data/gpfs/projects/punim2907/paddy/data"
 output_dir="outputs/$(date +'%y_%m_%d')_${SLURM_JOB_ID}/"
 
