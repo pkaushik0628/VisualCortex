@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=gpu-a100,gpu-h100,gpu-l40s
+#SBATCH --partition=gpu-a100,gpu-h100
 #SBATCH --gres=gpu:1
 #SBATCH --job-name=train_audio_dataset
 #SBATCH --account=punim2907
